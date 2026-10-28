@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Country Road Simulator</title>
+    <meta name="description" content="Narrow lanes, high hedges, tractors and sheep. Score points for careful, considerate driving on the country roads of England, Wales and Scotland." />
+    <meta name="theme-color" content="#1f5a33" />
+    <!-- link previews (WhatsApp, Facebook, X, Discord, Slack…); full URLs because some sites ignore relative ones -->
+    <link rel="canonical" href="https://usmanaman.github.io/country-road-simulator/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://usmanaman.github.io/country-road-simulator/" />
+    <meta property="og:site_name" content="Country Road Simulator" />
+    <meta property="og:title" content="Country Road Simulator" />
+    <meta property="og:description" content="Narrow lanes, high hedges, tractors and sheep. Points for courtesy, not speed. Free to play in your browser." />
+    <meta property="og:image" content="https://usmanaman.github.io/country-road-simulator/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="A red hatchback edging through a flock of sheep on a Welsh lane between high hedges" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 4 60 32 32 60 4 32z' fill='%23fff' stroke='%23111' stroke-width='4'/%3E%3Ctext x='32' y='38' font-size='18' text-anchor='middle' font-family='Arial' font-weight='700'%3EP%3C/text%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Overpass:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <!-- ===================== HUD ===================== -->
+    <div id="hud" hidden>
+      <div class="panel hud-score">
+        <div class="label">Score</div>
+        <div id="hud-score" class="big">0</div>
+        <div id="hud-streak" class="sub">Courtesy ×1.00</div>
+      </div>
+
+      <div class="panel hud-progress">
+        <div class="row"><span id="hud-dest" class="dest"></span><span id="hud-time" class="time">0:00</span></div>
+        <div class="track"><div id="hud-progress-fill" class="fill"></div><div id="hud-progress-car" class="car"></div></div>
+        <div id="hud-dist" class="sub"></div>
+      </div>
+
+      <div id="toasts"></div>
+      <div id="hud-cam" class="cam-label"></div>
+
+      <div id="hint"><span id="hint-icon"></span><span id="hint-text"></span></div>
+
+      <div id="prompt">
+        <div class="prompt-row"><span id="prompt-text"></span><span class="prompt-key">Press <kbd>T</kbd> to wave 👋</span></div>
+        <div class="prompt-track"><div id="prompt-bar"></div></div>
+      </div>
+      <div id="wave-hand">👋</div>
+      <div id="banner"></div>
+
+      <div class="panel hud-speed">
+        <div class="speedrow"><span id="hud-speed" class="speed">0</span><span class="unit">mph</span><span id="hud-gear" class="gear">N</span></div>
+        <div id="hud-advisory" class="sub"></div>
+      </div>
+
+      <div class="panel hud-right">
+        <canvas id="minimap"></canvas>
+        <div class="cond">
+          <div class="label">Condition <span id="hud-health-pct">100%</span></div>
+          <div class="health"><div id="hud-health"></div></div>
+        </div>
+      </div>
+
+      <button id="pause-btn" class="icon-btn" aria-label="Pause">❚❚</button>
+
+      <div id="touch">
+        <div class="pad left">
+          <button data-act="left" aria-label="Steer left">◀</button>
+          <button data-act="right" aria-label="Steer right">▶</button>
+        </div>
+        <div class="pad mid">
+          <button data-act="horn" aria-label="Horn">📯</button>
+          <button data-act="wave" aria-label="Wave">👋</button>
+          <button data-act="camera" aria-label="Camera">🎥</button>
+        </div>
+        <div class="pad right">
+          <button data-act="down" aria-label="Brake / reverse">▼</button>
+          <button data-act="up" aria-label="Accelerate">▲</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== MENU ===================== -->
+    <div id="menu" class="screen">
+      <div class="menu-card">
+        <header class="title">
+          <div class="sign"><span>Country Road</span><span>Simulator</span></div>
+          <p class="tagline">Narrow lanes. High hedges. Sheep with no sense of urgency.<br />Points for courtesy, not speed.</p>
+        </header>
+
+        <section>
+          <h2><span class="step">1</span> Choose your lane</h2>
+          <div id="regions" class="cards regions"></div>
+        </section>
+
+        <section>
+          <h2><span class="step">2</span> Choose your wheels</h2>
+          <div id="vehicles" class="cards vehicles"></div>
+          <div id="colours" class="colours" aria-label="Paint colour"></div>
+        </section>
+
+        <div class="go-row">
+          <label class="check"><input id="random-route" type="checkbox" /> Random route</label>
+          <button id="go" class="go">Set off <span>▶</span></button>
+        </div>
+
+        <details class="howto">
+          <summary>How to play</summary>
+          <div class="howto-grid">
+            <div>
+              <h3>Controls</h3>
+              <ul class="keys">
+                <li><kbd>W</kbd>/<kbd>↑</kbd> accelerate</li>
+                <li><kbd>S</kbd>/<kbd>↓</kbd> brake, then reverse</li>
+                <li><kbd>A</kbd><kbd>D</kbd>/<kbd>←</kbd><kbd>→</kbd> steer</li>
+                <li><kbd>Space</kbd> handbrake</li>
+                <li><kbd>T</kbd> wave thanks 👋</li>
+                <li><kbd>H</kbd> horn (use sparingly)</li>
+                <li><kbd>C</kbd> camera · <kbd>V</kbd> mirror · <kbd>J</kbd> hints · <kbd>M</kbd> mute · <kbd>Esc</kbd> pause</li>
+              </ul>
+            </div>
+            <div>
+              <h3>Lane etiquette (and points)</h3>
+              <ul>
+                <li><b>Passing places:</b> pull into one on your <b>left</b>, or wait opposite one on your right. Never park in them.</li>
+                <li><b>Stand-off?</b> Whoever is nearer a passing place backs up. Reversing to one earns big points.</li>
+                <li><b>Wave</b> when someone gives way, and when they thank you.</li>
+                <li><b>Horses:</b> under 10 mph, at least 2 m away, no horn. <b>Cyclists:</b> 1.5 m. <b>Walkers:</b> slow and wide.</li>
+                <li><b>Sheep &amp; cattle</b> have right of way in practice. Wait for the herd; never chase the flock.</li>
+                <li><b>Hedges hide stone.</b> Scrapes cost points and condition. Write the car off and the run ends.</li>
+              </ul>
+            </div>
+          </div>
+        </details>
+        <p class="foot">Drive on the left. Best scores are saved on this device. <a class="foot-link" data-feedback target="_blank" rel="noopener" hidden>Send feedback</a></p>
+      </div>
+    </div>
+
+    <!-- ===================== PAUSE ===================== -->
+    <div id="pause" class="screen dim" hidden>
+      <div class="dialog">
+        <h2>Paused</h2>
+        <div class="toggles">
+          <label class="check"><input id="opt-hints" type="checkbox" checked /> Hints</label>
+          <label class="check"><input id="opt-mirror" type="checkbox" checked /> Rear-view mirror</label>
+          <label class="check"><input id="opt-sound" type="checkbox" checked /> Sound</label>
+        </div>
+        <div class="btns">
+          <button id="resume" class="go">Resume</button>
+          <button id="restart" class="ghost">Restart route</button>
+          <button id="quit" class="ghost">Back to menu</button>
+          <a class="ghost feedback" data-feedback target="_blank" rel="noopener" hidden>💬 Send feedback</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== RESULTS ===================== -->
+    <div id="results" class="screen dim" hidden>
+      <div class="dialog results">
+        <div id="res-stars" class="stars"></div>
+        <h2 id="res-title"></h2>
+        <p id="res-sub" class="res-sub"></p>
+        <div class="res-final"><span>Final score</span><b id="res-score">0</b></div>
+        <p id="res-best" class="res-best"></p>
+        <div class="res-cols">
+          <div><h3>The good</h3><ul id="res-good"></ul></div>
+          <div><h3>The not-so-good</h3><ul id="res-bad"></ul></div>
+        </div>
+        <ul id="res-bonus" class="bonus"></ul>
+        <div class="btns">
+          <button id="again" class="go">Drive again</button>
+          <button id="menu-btn" class="ghost">Change route or vehicle</button>
+          <a class="ghost feedback" data-feedback target="_blank" rel="noopener" hidden>💬 Send feedback</a>
+        </div>
+      </div>
+    </div>
+
+    <div id="loading" class="screen dim" hidden><div class="loading-text">Laying tarmac… planting hedges… herding sheep…</div></div>
+    <div id="error" hidden></div>
+
+    <!-- built from src/ by `npm run build`: one plain script, so the page also works when opened straight from disk -->
+    <script src="dist/country-road.js" defer></script>
+    <script>
+      // if the game hasn't started after a few seconds, say so instead of showing a dead menu
+      setTimeout(function () {
+        if (window.__crsBooted) return;
+        var e = document.getElementById('error');
+        e.hidden = false;
+        e.textContent = 'The game didn\u2019t start. Refresh the page; if it still doesn\u2019t load, try an up-to-date Chrome, Edge, Firefox or Safari.';
+      }, 8000);
+    </script>
+  </body>
+</html>
