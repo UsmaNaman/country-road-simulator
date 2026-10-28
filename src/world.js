@@ -1,6 +1,6 @@
 // Builds all static scenery for a route: road, verges, hedges and walls, terrain, sky, props.
 import * as THREE from 'three';
-import { HEDGE, WALL, OPEN, FENCE } from './road.js';
+import { HEDGE, WALL, OPEN, FENCE, signSize, SIGN_GAP } from './road.js';
 import * as TX from './textures.js';
 import { makeGate, mat, mergedBoxes } from './models.js';
 import { RNG, makeNoise1D, makeNoise2D, fbm2, smoothstep, lerp, clamp, hash2 } from './rng.js';
@@ -674,15 +674,14 @@ export function buildWorld(road, region, scene) {
     const postM = mat('#9a9a9a');
     for (const sg of road.signs) {
       const i = clamp(Math.round(sg.s), 0, road.n - 1);
-      const b = sg.side > 0 ? road.bL[i] : road.bR[i];
-      road.toWorld(sg.s, sg.side * (b - 0.25), tmp);
+      const { rect, w, h } = signSize(sg.kind);
+      // on the verge, in the patch road.js cleared for it
+      const edge = sg.side > 0 ? road.wL[i] : road.wR[i];
+      road.toWorld(sg.s, sg.side * (edge + SIGN_GAP + w / 2), tmp);
       const g = new THREE.Group();
       g.position.set(tmp.x, tmp.y, tmp.z);
       g.rotation.y = tmp.theta + Math.PI;
       const tex = TX.signTexture(sg.kind, region);
-      const rect = !['pp', 'sheep', 'cattle', 'horse', 'ford', 'grid'].includes(sg.kind);
-      const w = rect ? 1.9 : sg.kind === 'pp' ? 1.0 : 0.95;
-      const h = rect ? 0.95 : w;
       const top = rect ? 2.3 : 2.4;
       const panelM = new THREE.MeshLambertMaterial({ map: tex, transparent: !rect, alphaTest: 0.3 });
       const front = new THREE.Mesh(new THREE.PlaneGeometry(w, h), panelM);

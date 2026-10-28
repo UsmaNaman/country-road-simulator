@@ -715,7 +715,9 @@ export class NPCVehicle extends Entity {
         else this.followT = Math.max(0, this.followT - dt * 0.5);
         if (this.followT > this.patience) {
           // a bay on our left — or, for a horse or bike, any field gateway on the left
-          let pp = road.passingPlaces.find((q) => q.side > 0 && q.s0 > this.s + 4 && q.s0 < this.s + 220);
+          // skipping bays another driver is already heading for
+          const taken = (q) => ctx.obstacles.some((o) => o !== this && o.targetPP === q && (o.state === 'toPP' || o.state === 'waitPP'));
+          let pp = road.passingPlaces.find((q) => q.side > 0 && q.s0 > this.s + 4 && q.s0 < this.s + 220 && !taken(q));
           if (this.vulnerable) {
             const gate = road.gates.find((g) => g.side > 0 && g.s > this.s + 6 && g.s < this.s + 220 && (!pp || g.s < pp.mid));
             if (gate) pp = { s0: gate.s - 3, s1: gate.s + 3, mid: gate.s, side: 1, gateway: true };
@@ -739,14 +741,17 @@ export class NPCVehicle extends Entity {
         }
         break;
       }
-      case 'waitPP':
+      case 'waitPP': {
         this.holdAt = this.s;
         this.waitT += dt;
-        if (this.waitT > 20 && gap > 20) {
+        // stopped short of the bay (something else in it), so not actually out of the way: carry on
+        const roomBeside = this.d - this.wid / 2 + road.rightEdge(this.s);
+        if ((this.waitT > 20 && gap > 20) || (this.waitT > 5 && roomBeside < p.wid + 0.3)) {
           this.setState('cruise');
           this.followT = -15;
         }
         break;
+      }
     }
   }
 

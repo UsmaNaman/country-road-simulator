@@ -20,6 +20,15 @@ export const BOUNDARY = {
 const TYPE_IDS = { hedge: HEDGE, wall: WALL, open: OPEN, fence: FENCE };
 const STEP = 1;
 
+// sign boards: rectangular ones carry text; the rest are round or triangular warnings
+export function signSize(kind) {
+  const rect = !['pp', 'sheep', 'cattle', 'horse', 'ford', 'grid'].includes(kind);
+  const w = rect ? 1.6 : kind === 'pp' ? 1.0 : 0.95;
+  return { rect, w, h: rect ? w / 2 : w };
+}
+// a sign stands this far from the tarmac edge (to the near edge of its board)
+export const SIGN_GAP = 0.2;
+
 export class Road {
   constructor(region, seed = region.seed) {
     this.region = region;
@@ -420,8 +429,22 @@ export class Road {
       if (z.sheepy && zi > 0) this.signs.push({ s: reg.zones[zi - 1].to * this.length + 25, side: 1, kind: 'sheep' });
     });
     this.signs.push({ s: this.village.s0 - 20, side: 1, kind: 'village' });
-    // no sign inside a gate gap
     this.signs = this.signs.filter((sg) => sg.s > 5 && sg.s < this.length - 5);
+    // clear a patch of verge at each sign, pushing the hedge (or wall, or fence) back so the whole board stands in the open
+    for (const sg of this.signs) {
+      const need = SIGN_GAP + signSize(sg.kind).w + 0.45;
+      const span = signSize(sg.kind).w / 2 + 1.2;
+      const taper = 4;
+      const i0 = Math.max(0, Math.floor(sg.s - span - taper));
+      const i1 = Math.min(this.n - 1, Math.ceil(sg.s + span + taper));
+      for (let i = i0; i <= i1; i++) {
+        const s = i * STEP;
+        const f = smoothstep(sg.s - span - taper, sg.s - span, s) * (1 - smoothstep(sg.s + span, sg.s + span + taper, s));
+        const w = sg.side > 0 ? this.wL : this.wR;
+        const b = sg.side > 0 ? this.bL : this.bR;
+        b[i] += Math.max(0, w[i] + need - b[i]) * f;
+      }
+    }
   }
 
   _buildIndex() {

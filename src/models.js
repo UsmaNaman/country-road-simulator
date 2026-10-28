@@ -375,10 +375,6 @@ export function makePerson({ style = 'rambler', seed = Math.random(), seated = f
     jacket = mat('#d7f22b', { emissive: '#3a4400' });
     trousers = mat('#e9e3d2');
   }
-  if (style === 'cyclist') {
-    jacket = mat(pick(['#e8452c', '#1c5fd0', '#f6c400', '#0f9e72'], 3));
-    trousers = mat('#151515');
-  }
   const hip = 0.9;
   const legs = [];
   for (const x of [-0.1, 0.1]) {
@@ -393,8 +389,8 @@ export function makePerson({ style = 'rambler', seed = Math.random(), seated = f
   const head = part(geo('head', () => new THREE.SphereGeometry(0.13, 12, 10)), skin, 0, hip + 0.78, 0, g);
   if (style === 'farmer') {
     box(g, 0.3, 0.07, 0.34, mat('#6b5a3e'), 0, hip + 0.9, 0.03);
-  } else if (style === 'rider' || style === 'cyclist') {
-    const helmet = part(geo('helm', () => new THREE.SphereGeometry(0.15, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2)), mat(style === 'rider' ? '#1d1d1d' : '#ffffff'), 0, hip + 0.82, 0, g);
+  } else if (style === 'rider') {
+    const helmet = part(geo('helm', () => new THREE.SphereGeometry(0.15, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2)), mat('#1d1d1d'), 0, hip + 0.82, 0, g);
     helmet.castShadow = true;
   } else if (pick([0, 1, 1], 4)) {
     part(geo('beanie', () => new THREE.SphereGeometry(0.14, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2)), mat(pick(JACKETS, 5)), 0, hip + 0.84, 0, g);
@@ -514,16 +510,98 @@ export function makeCyclist(seed = Math.random(), touring = false) {
   if (touring) {
     for (const x of [-0.18, 0.18]) box(g, 0.14, 0.32, 0.38, mat('#d4541b'), x, 0.62, -0.5);
   }
-  const rider = makePerson({ style: 'cyclist', seed });
-  rider.rotation.x = 0.55;
-  rider.position.set(0, 0.0, -0.32);
-  rider.scale.setScalar(0.95);
-  g.add(rider);
+  // saddle, stem and handlebars
+  tube(0, 0.85, -0.1, 0, 0.93, -0.12);
+  box(g, 0.12, 0.05, 0.25, DARK, 0, 0.95, -0.13);
+  tube(0, 0.92, 0.42, 0, 0.99, 0.5);
+  box(g, 0.48, 0.035, 0.035, DARK, 0, 0.99, 0.5);
+
+  // the rider: sitting on the saddle, leant over the bars with hands on the grips, feet on the pedals
+  const pick = (arr, k) => arr[Math.floor(((seed * 9301 + k * 49297) % 1) * arr.length) % arr.length];
+  const skin = mat(pick(SKIN, 1));
+  const jersey = mat(pick(['#e8452c', '#1c5fd0', '#f6c400', '#0f9e72'], 3));
+  const shorts = mat('#151515');
+  const lean = touring ? 0.55 : 0.75; // touring riders sit more upright
+  const hipY = 0.97;
+  const hipZ = -0.14;
+  const torso = new THREE.Group();
+  torso.position.set(0, hipY, hipZ);
+  torso.rotation.x = lean;
+  box(torso, 0.36, 0.58, 0.22, jersey, 0, 0.29, 0);
+  const head = new THREE.Group();
+  head.position.set(0, 0.72, 0.02);
+  head.rotation.x = -lean * 0.8; // eyes up the road
+  part(geo('head', () => new THREE.SphereGeometry(0.13, 12, 10)), skin, 0, 0, 0, head);
+  part(geo('helm', () => new THREE.SphereGeometry(0.15, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2)), mat('#ffffff'), 0, 0.04, 0, head);
+  torso.add(head);
+  g.add(torso);
+
+  // limbs are unit boxes stretched between two joints each frame
+  const limbG = geo('limb', () => new THREE.BoxGeometry(1, 1, 1));
+  const limb = (m, w) => {
+    const mesh = part(limbG, m, 0, 0, 0, g);
+    mesh.userData.w = w;
+    return mesh;
+  };
+  const UP = new THREE.Vector3(0, 1, 0);
+  const dir = new THREE.Vector3();
+  const place = (mesh, a, b) => {
+    dir.subVectors(b, a);
+    const len = dir.length() || 1e-3;
+    mesh.position.addVectors(a, b).multiplyScalar(0.5);
+    mesh.quaternion.setFromUnitVectors(UP, dir.divideScalar(len));
+    mesh.scale.set(mesh.userData.w, len, mesh.userData.w);
+  };
+  // two equal bones from a to c, the joint bending towards the front of the bike
+  const nrm = new THREE.Vector3();
+  const joint = (a, c, bone, out) => {
+    dir.subVectors(c, a);
+    const d = Math.min(dir.length(), 2 * bone - 1e-3);
+    const h = Math.sqrt(bone * bone - (d * d) / 4);
+    nrm.set(0, -dir.z, dir.y).normalize();
+    if (nrm.z < 0) nrm.negate();
+    return out.copy(a).addScaledVector(dir, 0.5).addScaledVector(nrm, h);
+  };
+
+  const sides = [-1, 1].map((sx) => ({
+    sx,
+    hip: new THREE.Vector3(sx * 0.1, hipY, hipZ),
+    knee: new THREE.Vector3(),
+    foot: new THREE.Vector3(),
+    thigh: limb(shorts, 0.14),
+    shin: limb(skin, 0.11),
+    shoe: box(g, 0.1, 0.08, 0.24, DARK, 0, 0, 0),
+    crank: limb(HUB, 0.03),
+    shoulder: new THREE.Vector3(sx * 0.19, hipY + 0.52 * Math.cos(lean), hipZ + 0.52 * Math.sin(lean)),
+    hand: new THREE.Vector3(),
+    arm: limb(jersey, 0.1),
+    palm: part(geo('hand', () => new THREE.SphereGeometry(0.06, 6, 5)), skin, 0, 0, 0, g),
+  }));
+  const crankC = new THREE.Vector3(0, 0.4, 0.05);
+  const pose = (phase, wave, time) => {
+    for (const [i, sd] of sides.entries()) {
+      const a = phase + i * Math.PI;
+      sd.foot.set(sd.sx * 0.13, crankC.y + 0.17 * Math.sin(a), crankC.z + 0.17 * Math.cos(a));
+      joint(sd.hip, sd.foot, 0.44, sd.knee);
+      place(sd.thigh, sd.hip, sd.knee);
+      place(sd.shin, sd.knee, sd.foot);
+      sd.shoe.position.set(sd.foot.x, sd.foot.y + 0.02, sd.foot.z + 0.04);
+      place(sd.crank, crankC.clone().setX(sd.sx * 0.08), sd.foot);
+      // right hand (-x when facing +z) leaves the bars to wave
+      if (wave && sd.sx < 0) sd.hand.set(sd.shoulder.x - 0.3, sd.shoulder.y + 0.18 + Math.sin(time * 12) * 0.04, sd.shoulder.z + 0.2);
+      else sd.hand.set(sd.sx * 0.21, 0.99, 0.5);
+      place(sd.arm, sd.shoulder, sd.hand);
+      sd.palm.position.copy(sd.hand);
+    }
+  };
+  pose(seed * 6, false, 0);
+
   g.userData.wheels = wheels;
   g.userData.wheelR = 0.34;
   g.userData.animate = (e, dt, time) => {
     for (const w of wheels) w.rotation.x += (e.v * dt) / 0.34;
-    rider.userData.animate({ vmag: e.v > 0.2 ? 0.8 : 0, anim: (e.anim = (e.anim || 0) + dt * e.v * 1.2), waveT: e.waveT }, 0, time);
+    e.pedal = (e.pedal ?? seed * 6) + dt * e.v * 1.6;
+    pose(e.pedal, e.waveT > 0, time);
   };
   return g;
 }

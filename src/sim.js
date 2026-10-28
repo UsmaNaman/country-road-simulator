@@ -433,9 +433,11 @@ export function autopilot(sim) {
     const cmax = road.leftEdge(sLook) + 0.1 - half;
     let best = null;
     let usedWant = 0;
-    for (const want of [1.3, 0.9, 0.6, 0.4]) {
+    // last resort (a tractor between sheep on both verges): creep past animals with a little less room
+    for (const want of [1.3, 0.9, 0.6, 0.4, 0.25]) {
       // forbidden ranges for the car's centre line
-      const bad = blockers.map((b) => [b.lo - (b.careful ? want : Math.min(want, 0.4)) - half, b.hi + (b.careful ? want : Math.min(want, 0.4)) + half]);
+      const room = (b) => (b.careful ? (want < 0.4 && b.e.category !== 'animal' ? 0.4 : want) : Math.min(want, 0.4));
+      const bad = blockers.map((b) => [b.lo - room(b) - half, b.hi + room(b) + half]);
       const cands = [targetD, cmin, cmax, ...bad.flatMap(([a, b]) => [a, b])].map((x) => clamp(x, cmin, cmax));
       const free = cands.filter((x) => bad.every(([a, b]) => x <= a || x >= b)).sort((a, b) => Math.abs(a - targetD) - Math.abs(b - targetD));
       if (free.length && cmin <= cmax) {
@@ -451,6 +453,7 @@ export function autopilot(sim) {
       targetD = best;
       if (Math.abs(best - p.d) > 0.3 && nearest && nearest.gapAhead < 10) targetV = Math.min(targetV, 1.5);
       if (usedWant < 0.9 && blockers.some((b) => b.careful)) targetV = Math.min(targetV, 2.2);
+      if (usedWant < 0.4) targetV = Math.min(targetV, 1.0);
     }
   }
   // Stand-off with something that can't reverse: back up to the last passing place.
