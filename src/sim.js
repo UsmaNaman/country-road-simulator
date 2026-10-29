@@ -158,7 +158,7 @@ export class Sim {
         this.emit('scrape', { type: c.type, side });
       }
       if (c.impact > 1.2) {
-        this.damage(info.damage * c.impact * c.impact * 1.4 * dur);
+        this.damage(info.damage * c.impact * c.impact * 1.0 * dur);
         this.score.add(-40, `Thumped into the ${info.name}`);
         this.emit('impact', { strength: c.impact });
       }
@@ -166,7 +166,7 @@ export class Sim {
     }
     this.scrapeLevel = level;
     if (report.end && report.end > 1) {
-      this.damage(report.end * report.end * 1.3 * dur);
+      this.damage(report.end * report.end * 1.0 * dur);
       this.score.add(-40, 'Hit the gate');
       this.emit('impact', { strength: report.end });
     }
@@ -294,7 +294,7 @@ export class Sim {
       this.damage((2 + closing * closing) * dur);
       this.score.add(-80, `Bumped the ${e.name}`);
     } else {
-      this.damage((5 + closing * closing * 1.5) * dur);
+      this.damage((5 + closing * closing * 0.9) * dur); // ~30% off a hatchback at 13 mph; head-on at speed still writes you off
       this.score.add(-150, `Collided with the ${e.name}!`);
     }
     e.flashT = 1.5;

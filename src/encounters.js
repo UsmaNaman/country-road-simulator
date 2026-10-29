@@ -343,7 +343,13 @@ export class SlowAheadEnc extends Encounter {
     const gap = npc.followGap ?? 99;
     if (gap > 70) return null;
     const C = this.cfg;
-    if (npc.state === 'toPP' || npc.state === 'waitPP') {
+    // on their way to a gateway or bay: not out of the way yet, so don't invite an overtake
+    if (npc.state === 'toPP') {
+      if (C.cat === 'horse') return { text: 'The rider is heading for a gateway to let you by. Stay well back until they’re in.', icon: '🐎' };
+      if (C.cat === 'cyclist') return { text: 'The cyclist is making for a wider spot to let you by. Hang back a moment.', icon: '🚲' };
+      return { text: 'The tractor is heading for a passing place to let you by. Hang back until it’s in.', icon: '🚜' };
+    }
+    if (npc.state === 'waitPP') {
       if (C.cat === 'horse') return { text: 'The rider has pulled in. Pass dead slow (under 10 mph) and wide.', icon: '🐎' };
       if (C.cat === 'cyclist') return { text: 'The cyclist has pulled in. Pass slowly with room to spare.', icon: '🚲' };
       return { text: 'The tractor has pulled over. Pass carefully, then wave (T).', icon: '🚜' };
