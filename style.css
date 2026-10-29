@@ -1221,3 +1221,111 @@ a[hidden] {
     bottom: 140px;
   }
 }
+
+/* ---------------- how to play ---------------- */
+.dialog.intro {
+  width: min(780px, 100%);
+  text-align: left;
+}
+.dialog.intro h2,
+.intro-sub,
+.intro-foot {
+  text-align: center;
+}
+.intro-sub {
+  margin: 0 0 14px;
+  color: var(--muted);
+}
+.intro-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 8px 26px;
+}
+.intro-grid h3 {
+  font: 600 17px var(--display);
+  margin: 4px 0 8px;
+}
+.intro-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 7px;
+  font-size: 14.5px;
+  line-height: 1.35;
+}
+.intro-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.intro-list.rules li {
+  align-items: flex-start;
+}
+.intro-list .ic {
+  flex: 0 0 auto;
+  min-width: 58px;
+  text-align: center;
+  font-size: 17px;
+}
+.intro-list .ic kbd {
+  font-size: 12px;
+  margin: 0 1px;
+}
+.intro-list .ic.gas,
+.intro-list .ic.brake {
+  font: 800 11px var(--ui);
+  letter-spacing: 0.06em;
+  color: #fff;
+  border-radius: 9px;
+  padding: 7px 0;
+}
+.intro-list .ic.gas {
+  background: #1f8a47;
+}
+.intro-list .ic.brake {
+  background: #b23030;
+}
+.intro-foot {
+  margin: 16px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.for-touch {
+  display: none !important;
+}
+@media (pointer: coarse) {
+  .for-touch {
+    display: grid !important;
+  }
+  .for-keys {
+    display: none !important;
+  }
+}
+@media (max-width: 640px) {
+  .intro-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-height: 500px) {
+  .dialog.intro {
+    padding: 14px 18px;
+  }
+  .dialog.intro h2 {
+    font-size: 22px;
+    margin: 0 0 2px;
+  }
+  .intro-sub {
+    margin-bottom: 6px;
+  }
+  .intro-list {
+    gap: 3px;
+    font-size: 13px;
+  }
+  .intro-foot {
+    margin-top: 8px;
+  }
+  .dialog.intro .btns {
+    margin-top: 8px;
+  }
+}

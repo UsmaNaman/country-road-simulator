@@ -216,7 +216,8 @@ function startAttract() {
 }
 
 function showScreen(id) {
-  for (const s of ['menu', 'pause', 'results', 'loading']) $(s).hidden = s !== id;
+  introFrom = null;
+  for (const s of ['menu', 'pause', 'intro', 'results', 'loading']) $(s).hidden = s !== id;
 }
 
 function startGame({ sameSeed = false } = {}) {
@@ -255,6 +256,8 @@ function startGame({ sameSeed = false } = {}) {
       sim.encounters = sim.encounters.filter((e) => e.s > sim.player.s + 240);
       state.game.snapCamera();
     }
+    // first drive on this device: how to play, before the car moves (dev links with ?play= skip it)
+    if (!store.get('introSeen', false) && (!params.has('play') || params.get('intro') === '1')) openIntro('start');
     const ff = Number(params.get('ff') || 0);
     for (let t = 0; t < ff; t += 0.1) state.game.update(0.1, idleInput());
     if (params.get('cam')) while (['chase', 'cab', 'high'][state.game.camIndex] !== params.get('cam')) state.game.cycleCamera();
@@ -322,7 +325,7 @@ function toMenu() {
 }
 
 function setPaused(p) {
-  if (state.mode !== 'playing') return;
+  if (state.mode !== 'playing' || introFrom) return; // the how-to-play card already holds the game
   state.paused = p;
   $('pause').hidden = !p;
   if (p) {
@@ -331,13 +334,35 @@ function setPaused(p) {
   }
 }
 
+// how to play: shown before the first drive, and from the pause menu
+let introFrom = null;
+function openIntro(from) {
+  introFrom = from;
+  state.paused = true;
+  $('pause').hidden = true;
+  $('intro').hidden = false;
+  audio.quiet();
+}
+function closeIntro() {
+  if (!introFrom) return;
+  $('intro').hidden = true;
+  store.set('introSeen', true);
+  if (introFrom === 'pause') $('pause').hidden = false;
+  else state.paused = false;
+  introFrom = null;
+  document.activeElement?.blur(); // so Space (handbrake) can't re-press the button
+}
+$('intro-go').onclick = closeIntro;
+$('howto-btn').onclick = () => openIntro('pause');
+window.addEventListener('keydown', (e) => introFrom && e.key === 'Enter' && (e.preventDefault(), closeIntro()));
+
 $('go').onclick = () => startGame();
 $('again').onclick = () => startGame({ sameSeed: true });
 $('menu-btn').onclick = toMenu;
 $('resume').onclick = () => setPaused(false);
 $('restart').onclick = () => startGame({ sameSeed: true });
 $('quit').onclick = toMenu;
-$('pause-btn').onclick = () => setPaused(!state.paused);
+$('pause-btn').onclick = () => (introFrom ? closeIntro() : setPaused(!state.paused));
 $('opt-hints').checked = state.hints;
 $('opt-mirror').checked = state.mirror;
 $('opt-sound').checked = state.sound;
@@ -387,7 +412,7 @@ function frame(now) {
   last = now;
   const inp = input.read();
   if (state.mode === 'playing') {
-    if (inp.pause) setPaused(!state.paused);
+    if (inp.pause) introFrom ? closeIntro() : setPaused(!state.paused);
     if (inp.mute) {
       state.sound = !state.sound;
       audio.setMuted(!state.sound);

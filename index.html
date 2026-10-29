@@ -154,8 +154,52 @@
           <button id="resume" class="go">Resume</button>
           <button id="restart" class="ghost">Restart route</button>
           <button id="quit" class="ghost">Back to menu</button>
+          <button id="howto-btn" class="ghost">How to play</button>
           <a class="ghost feedback" data-feedback target="_blank" rel="noopener" hidden>💬 Send feedback</a>
         </div>
+      </div>
+    </div>
+
+    <!-- ===================== HOW TO PLAY (first drive, and from the pause menu) ===================== -->
+    <div id="intro" class="screen dim" hidden>
+      <div class="dialog intro">
+        <h2>Before you set off</h2>
+        <p class="intro-sub">Points come from courtesy and care, not speed.</p>
+        <div class="intro-grid">
+          <section>
+            <h3>Controls</h3>
+            <ul class="intro-list for-touch">
+              <li><span class="ic">◀ ▶</span><span>Steer</span></li>
+              <li><span class="ic gas">GAS</span><span>Hold to drive, let go to coast</span></li>
+              <li><span class="ic brake">BRAKE</span><span>Hold to slow down; keep holding to reverse</span></li>
+              <li><span class="ic">👋</span><span>Wave thanks when the prompt pops up</span></li>
+              <li><span class="ic">📯</span><span>Horn (use sparingly)</span></li>
+              <li><span class="ic">❚❚</span><span>Pause</span></li>
+            </ul>
+            <ul class="intro-list for-keys">
+              <li><span class="ic"><kbd>W</kbd><kbd>↑</kbd></span><span>Drive</span></li>
+              <li><span class="ic"><kbd>S</kbd><kbd>↓</kbd></span><span>Brake; keep holding to reverse</span></li>
+              <li><span class="ic"><kbd>A</kbd><kbd>D</kbd></span><span>Steer (or <kbd>←</kbd> <kbd>→</kbd>)</span></li>
+              <li><span class="ic"><kbd>T</kbd></span><span>Wave thanks when the prompt pops up</span></li>
+              <li><span class="ic"><kbd>H</kbd></span><span>Horn (use sparingly)</span></li>
+              <li><span class="ic"><kbd>Esc</kbd></span><span>Pause</span></li>
+              <li><span class="ic"><kbd>C</kbd></span><span>Change camera · <kbd>Space</kbd> handbrake</span></li>
+              <li><span class="ic">🎮</span><span>Controller: stick steers, right trigger drives, left trigger brakes</span></li>
+            </ul>
+          </section>
+          <section>
+            <h3>How to score</h3>
+            <ul class="intro-list rules">
+              <li><span class="ic">🐢</span><span><b>Keep to a sensible speed.</b> It's shown under your mph.</span></li>
+              <li><span class="ic">🅿️</span><span><b>Meeting traffic?</b> Pull into a passing place on your left, or wait opposite one on your right. No room? Someone has to reverse.</span></li>
+              <li><span class="ic">👋</span><span><b>Say thanks</b> when someone gives way.</span></li>
+              <li><span class="ic">🐑</span><span><b>Animals, walkers, riders and cyclists:</b> slow right down, give them room, and no horn.</span></li>
+              <li><span class="ic">🌿</span><span><b>Hedges hide stone.</b> Scrapes cost points and damage the car.</span></li>
+            </ul>
+          </section>
+        </div>
+        <p class="intro-foot">Hints pop up along the way. You can see this again from the pause menu.</p>
+        <div class="btns"><button id="intro-go" class="go">Let's go <span>▶</span></button></div>
       </div>
     </div>
 

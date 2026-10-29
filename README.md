@@ -126,6 +126,7 @@ also drives the menu backdrop.
 | `&ff=30` | Fast-forward 30 seconds before showing |
 | `&cam=cab\|high` | Start in another camera |
 | `&quality=low` | Phone-style graphics |
+| `&intro=1` | Show the first-drive "Before you set off" card, which `?play=` links normally skip |
 
 ## Licence
 
