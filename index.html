@@ -216,10 +216,26 @@
           <div><h3>The not-so-good</h3><ul id="res-bad"></ul></div>
         </div>
         <ul id="res-bonus" class="bonus"></ul>
+        <div id="board" class="board" hidden>
+          <h3>🌍 <span id="board-title">World top 10</span></h3>
+          <ol id="board-list"></ol>
+          <p id="board-empty" class="board-msg" hidden>No scores yet. Finish this route to be the first on the board!</p>
+          <form id="board-post" class="board-post" hidden>
+            <label for="board-name"><b>You made the top 10!</b> Your name for the board:</label>
+            <div class="board-row">
+              <input id="board-name" maxlength="16" autocomplete="nickname" autocapitalize="words" spellcheck="false" placeholder="e.g. Hedge Hugger" />
+              <button class="go" type="submit">Post score</button>
+            </div>
+            <p id="board-msg" class="board-msg"></p>
+          </form>
+        </div>
+        <div class="res-ask" data-feedback-ask hidden>
+          <span><b>How was that?</b> Tell us what you enjoyed or what felt off. It takes a minute and helps make the game better.</span>
+          <a class="ghost feedback" data-feedback target="_blank" rel="noopener" hidden>💬 Send feedback</a>
+        </div>
         <div class="btns">
           <button id="again" class="go">Drive again</button>
           <button id="menu-btn" class="ghost">Change route or vehicle</button>
-          <a class="ghost feedback" data-feedback target="_blank" rel="noopener" hidden>💬 Send feedback</a>
         </div>
       </div>
     </div>

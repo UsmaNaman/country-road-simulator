@@ -75,6 +75,9 @@ You score for the lane etiquette set out in the Highway Code:
 - **Steady driving.** A trickle of points for moving at a sensible speed. Going too fast
   for the bend, or tailgating a tractor, costs you.
 
+Finish one of the three standard routes with a top-10 score and you can post it, under a nickname, to
+the **world leaderboard** for that route (random routes aren't ranked).
+
 Good encounters build a **courtesy streak** of up to ×1.5 on top of the vehicle
 multiplier. At the destination you get a completion bonus, a no-claims bonus for the
 car's condition, and a time bonus if you beat the route's target. Then up to three stars.
@@ -96,6 +99,7 @@ src/textures.js         canvas-drawn textures and road signs
 src/audio.js            synthesised sound (WebAudio): engine, horn, sheep, cows, birdsong
 src/hud.js, input.js    heads-up display and keyboard/touch/gamepad input
 src/feedback.js         "Send feedback" links to the Google Form (set in FEEDBACK in config.js)
+src/leaderboard.js      world top 10 per route (Supabase; database rules in supabase/migrations/)
 vendor/three.module.js  Three.js r160 (bundled into dist/ by esbuild)
 dist/country-road.js    the built game the page loads
 ```

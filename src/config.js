@@ -227,3 +227,10 @@ export const FEEDBACK = {
   url: 'https://docs.google.com/forms/d/e/1FAIpQLSfOYL87_qVdiY4cWI9cIi-6SNo2ORyUzIXHuVCVsewzGAaMgA/viewform',
   detailsEntry: 'entry.1854141009',
 };
+
+// Global leaderboard (a free Supabase project; database setup in supabase/migrations/).
+// The publishable key is meant to be public: it can only call submit_score and top_scores.
+export const LEADERBOARD = {
+  url: 'https://dxvxcvxylpclpalfekyh.supabase.co',
+  key: 'sb_publishable_nchgAzPKr9w_p6s0uc8FEA_kl24AESY',
+};

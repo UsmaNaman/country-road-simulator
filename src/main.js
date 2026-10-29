@@ -6,6 +6,7 @@ import { Input } from './input.js';
 import { AudioSys } from './audio.js';
 import { REGIONS, REGION_ORDER, VEHICLES, VEHICLE_ORDER } from './config.js';
 import { updateFeedbackLinks } from './feedback.js';
+import { topScores, submitScore, nameProblem } from './leaderboard.js';
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -117,6 +118,7 @@ function bestFor(region, vehicle) {
 }
 
 function renderMenu() {
+  queueMicrotask(fillWorldBest);
   const rbox = $('regions');
   rbox.innerHTML = '';
   for (const id of REGION_ORDER) {
@@ -130,7 +132,8 @@ function renderMenu() {
       <div class="name"></div>
       <p class="blurb"></p>
       <div class="stat"><span>Tightness</span><span class="dots">${dots(DIFFICULTY[id], 3)}</span></div>
-      <div class="best">${best ? 'Best: ' + best.toLocaleString('en-GB') : '&nbsp;'}</div>`;
+      <div class="best">${best ? 'Best: ' + best.toLocaleString('en-GB') : '&nbsp;'}</div>
+      <div class="world" data-world="${id}"></div>`;
     b.querySelector('.name').textContent = r.title;
     b.querySelector('.blurb').textContent = r.blurb;
     b.onclick = () => {
@@ -307,9 +310,110 @@ function showResults(type, summary, sim) {
     bonus.appendChild(li);
   }
   hud.prompt(null);
+  showBoard(type, summary, sim);
   updateFeedbackLinks(state, sim, type === 'finish' ? 'finished' : 'run ended');
   showScreen('results');
 }
+
+// ---------- world leaderboard ----------
+// Only the three standard routes are ranked (a random route is different for everyone).
+const worldBest = {}; // route → its top run, or null when the board is empty
+async function refreshWorldBest(tries = 3) {
+  const got = await Promise.all(
+    REGION_ORDER.map(async (id) => {
+      const rows = await topScores(id, 1);
+      if (rows) worldBest[id] = rows[0] || null;
+      return !!rows;
+    }),
+  );
+  fillWorldBest();
+  // the very first request can be slow (or the phone briefly offline): try again shortly
+  if (got.includes(false) && tries > 1) setTimeout(() => refreshWorldBest(tries - 1), 5000);
+}
+function fillWorldBest() {
+  for (const el of document.querySelectorAll('[data-world]')) {
+    const top = worldBest[el.dataset.world];
+    el.textContent = top ? `🌍 World best: ${top.score.toLocaleString('en-GB')} · ${top.name}` : top === null ? '🌍 No world best yet' : '';
+  }
+}
+
+let boardRun = null; // the finished run the player may post
+async function showBoard(type, summary, sim) {
+  const box = $('board');
+  const ranked = !state.random && state.seed == null;
+  box.hidden = !ranked;
+  $('board-post').hidden = true;
+  $('board-msg').textContent = '';
+  boardRun = null;
+  if (!ranked) return;
+  $('board-title').textContent = `World top 10 · ${sim.region.title}`;
+  const run = type === 'finish' ? { route: state.region, vehicle: state.vehicle, score: summary.final, time: sim.time, condition: sim.health } : null;
+  boardRun = run;
+  const rows = await renderBoard(state.region);
+  if (boardRun !== run) return; // another run finished while this was loading
+  if (!rows) {
+    box.hidden = true; // leaderboard unreachable: just leave it out
+    return;
+  }
+  if (run && run.score > 0 && (rows.length < 10 || run.score > rows[rows.length - 1].score)) {
+    $('board-post').hidden = false;
+    $('board-name').value = store.get('boardName', '');
+  }
+}
+async function renderBoard(route, mine) {
+  const rows = await topScores(route, 10);
+  const list = $('board-list');
+  list.innerHTML = '';
+  if (!rows) return null;
+  for (const r of rows) {
+    const li = document.createElement('li');
+    const who = document.createElement('span');
+    who.className = 'who';
+    who.textContent = r.name;
+    const car = document.createElement('span');
+    car.className = 'car';
+    car.textContent = VEHICLES[r.vehicle]?.name || '';
+    const b = document.createElement('b');
+    b.textContent = r.score.toLocaleString('en-GB');
+    li.append(who, car, b);
+    if (mine && r.name.toLowerCase() === mine.name.toLowerCase() && r.score === mine.score) li.className = 'me';
+    list.appendChild(li);
+  }
+  $('board-empty').hidden = rows.length > 0;
+  return rows;
+}
+$('board-post').onsubmit = async (e) => {
+  e.preventDefault();
+  const run = boardRun;
+  if (!run) return;
+  const name = $('board-name').value.trim().replace(/\s+/g, ' ');
+  const problem = nameProblem(name);
+  const msg = $('board-msg');
+  if (problem) {
+    msg.textContent = problem;
+    return;
+  }
+  const btn = $('board-post').querySelector('button');
+  btn.disabled = true;
+  msg.textContent = 'Posting…';
+  const res = await submitScore({ name, ...run });
+  btn.disabled = false;
+  if (boardRun !== run) return;
+  if (res.ok) {
+    store.set('boardName', name);
+    boardRun = null;
+    $('board-post').hidden = true;
+    await renderBoard(run.route, { name, score: run.score });
+    $('board-title').textContent = `You're #${res.rank} in the world · ${REGIONS[run.route].title}`;
+    refreshWorldBest();
+  } else {
+    msg.textContent = {
+      name: 'That name isn’t allowed. Try another.',
+      invalid: 'Sorry, this run couldn’t be posted.',
+      busy: 'Lots of scores from here in the last hour. Try again later.',
+    }[res.reason] || 'Couldn’t reach the leaderboard. Check your connection and try again.';
+  }
+};
 
 const fmt = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
@@ -319,6 +423,7 @@ function toMenu() {
   hud.show(false);
   showScreen('menu');
   renderMenu();
+  refreshWorldBest();
   updateFeedbackLinks(state, null, 'menu');
   startAttract();
   audio.quiet();
@@ -450,6 +555,7 @@ function frame(now) {
 async function boot() {
   window.__crsBooted = true;
   renderMenu();
+  refreshWorldBest();
   updateFeedbackLinks(state, null, 'menu');
   // the menu's link describes whatever route and vehicle are picked at the moment it's pressed
   for (const ev of ['pointerdown', 'focus']) $('menu').querySelector('[data-feedback]').addEventListener(ev, () => updateFeedbackLinks(state, null, 'menu'));

@@ -33,6 +33,7 @@ export function feedbackUrl(state, sim, where) {
 
 // point every [data-feedback] link at the form, or hide them all while no form is set
 export function updateFeedbackLinks(state, sim, where) {
+  for (const el of document.querySelectorAll('[data-feedback-ask]')) el.hidden = !FEEDBACK.url;
   for (const a of document.querySelectorAll('[data-feedback]')) {
     a.hidden = !FEEDBACK.url;
     if (FEEDBACK.url) a.href = feedbackUrl(state, sim, where);
