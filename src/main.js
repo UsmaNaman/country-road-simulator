@@ -61,6 +61,32 @@ const input = new Input();
 input.bindTouch($('touch'));
 const audio = new AudioSys();
 
+// ---------- no zooming on phones and tablets ----------
+// The viewport tag and CSS touch-action block most of it; Safari also needs its pinch gestures cancelled.
+for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
+document.addEventListener('touchmove', (e) => e.touches.length > 1 && e.preventDefault(), { passive: false });
+document.addEventListener('dblclick', (e) => e.preventDefault());
+// If a page does end up zoomed in, snap it back once the fingers lift: re-applying the viewport
+// tag makes iOS reset its zoom.
+{
+  const meta = document.querySelector('meta[name=viewport]');
+  const base = meta?.content;
+  let fingers = 0;
+  let timer = 0;
+  const unzoom = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (!meta || fingers > 0 || !(window.visualViewport?.scale > 1.01)) return;
+      meta.content = base.replace('initial-scale=1', 'initial-scale=1.0');
+      requestAnimationFrame(() => (meta.content = base));
+      window.scrollTo(0, 0);
+    }, 400);
+  };
+  document.addEventListener('touchstart', (e) => (fingers = e.touches.length), { passive: true });
+  document.addEventListener('touchend', (e) => ((fingers = e.touches.length), unzoom()), { passive: true });
+  window.visualViewport?.addEventListener('resize', unzoom);
+}
+
 const state = {
   mode: 'menu',
   region: REGIONS[store.get('region', 'england')] ? store.get('region', 'england') : 'england',
@@ -421,3 +447,4 @@ async function boot() {
 }
 boot();
 window.__crs = state;
+window.__crsInput = input; // for the touch-control checks

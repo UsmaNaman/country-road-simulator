@@ -44,26 +44,43 @@ export class Input {
     window.addEventListener('blur', () => this.held.clear());
   }
 
-  // wire up on-screen buttons: elements with data-act="up|down|left|right|horn|wave|camera"
+  // wire up on-screen buttons: elements with data-act="up|down|left|right|horn|wave|camera".
+  // Each finger is tracked on its own and can slide between the held buttons (brake to gas,
+  // left to right) like a foot between pedals; slipping off a button doesn't let go of it.
   bindTouch(root) {
-    for (const el of root.querySelectorAll('[data-act]')) {
+    const fingers = new Map(); // pointerId → action
+    const sync = () => {
+      this.touch = new Set(fingers.values());
+      for (const el of root.querySelectorAll('[data-act]')) el.classList.toggle('down', this.touch.has(el.dataset.act));
+    };
+    root.addEventListener('pointerdown', (e) => {
+      const el = e.target.closest?.('[data-act]');
+      if (!el) return;
+      e.preventDefault();
+      el.setPointerCapture?.(e.pointerId); // keep this finger's moves even once it leaves the button
       const a = el.dataset.act;
-      const on = (e) => {
-        e.preventDefault();
-        if (EDGE.includes(a)) this.edges.add(a);
-        this.touch.add(a);
-        el.classList.add('down');
-      };
-      const off = (e) => {
-        e.preventDefault();
-        this.touch.delete(a);
-        el.classList.remove('down');
-      };
-      el.addEventListener('pointerdown', on);
-      el.addEventListener('pointerup', off);
-      el.addEventListener('pointercancel', off);
-      el.addEventListener('pointerleave', off);
-    }
+      if (EDGE.includes(a)) this.edges.add(a);
+      fingers.set(e.pointerId, a);
+      sync();
+    });
+    root.addEventListener('pointermove', (e) => {
+      const cur = fingers.get(e.pointerId);
+      if (!cur || EDGE.includes(cur)) return;
+      const a = document.elementFromPoint(e.clientX, e.clientY)?.closest?.('[data-act]')?.dataset.act;
+      if (a && a !== cur && !EDGE.includes(a)) {
+        fingers.set(e.pointerId, a);
+        sync();
+      }
+    });
+    const end = (e) => fingers.delete(e.pointerId) && sync();
+    for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) root.addEventListener(ev, end);
+    // a long press must never turn into text selection, the copy menu or a zoom
+    root.addEventListener('touchstart', (e) => e.target.closest?.('[data-act]') && e.preventDefault(), { passive: false });
+    for (const ev of ['contextmenu', 'selectstart']) root.addEventListener(ev, (e) => e.preventDefault());
+    window.addEventListener('blur', () => {
+      fingers.clear();
+      sync();
+    });
   }
 
   is(a) {

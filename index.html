@@ -2,7 +2,7 @@
 <html lang="en-GB">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <title>Country Road Simulator</title>
     <meta name="description" content="Narrow lanes, high hedges, tractors and sheep. Score points for careful, considerate driving on the country roads of England, Wales and Scotland." />
     <meta name="theme-color" content="#1f5a33" />
@@ -79,8 +79,8 @@
           <button data-act="camera" aria-label="Camera">🎥</button>
         </div>
         <div class="pad right">
-          <button data-act="down" aria-label="Brake / reverse">▼</button>
-          <button data-act="up" aria-label="Accelerate">▲</button>
+          <button class="pedal brake" data-act="down" aria-label="Brake, hold to reverse"><span>BRAKE</span></button>
+          <button class="pedal gas" data-act="up" aria-label="Accelerate"><span>GAS</span></button>
         </div>
       </div>
     </div>

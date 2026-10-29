@@ -48,6 +48,12 @@ body {
   font-family: var(--ui);
   color: var(--ink);
   -webkit-tap-highlight-color: transparent;
+  /* it's a game, not a document: no text selection, copy menus or pinch/double-tap zoom.
+     pan-x pan-y still lets the menu scroll */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: pan-x pan-y;
 }
 #game {
   position: fixed;
@@ -860,7 +866,8 @@ section h2 {
 .icon-btn {
   position: absolute;
   top: 14px;
-  right: 308px;
+  /* just left of the rear-view mirror, whose width game.js sets to min(380px, 42vw) */
+  right: calc(50% + min(190px, 21vw) + 14px);
   width: 42px;
   height: 42px;
   border-radius: 12px;
@@ -914,14 +921,59 @@ section h2 {
   #touch button.down {
     background: rgba(63, 191, 98, 0.6);
   }
+  #touch .left button {
+    width: 80px;
+    height: 80px;
+  }
+  /* controller-style pedals: tall, grippy, and easy to find without looking */
+  #touch .pedal {
+    width: 80px;
+    border-radius: 24px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0 0 12px;
+    font: 800 13px var(--ui);
+    letter-spacing: 0.08em;
+    background-image: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.1) 0 3px, transparent 3px 11px);
+    transition: transform 0.05s;
+  }
+  #touch .pedal.brake {
+    height: 100px;
+    background-color: rgba(150, 34, 34, 0.5);
+    border-color: rgba(255, 150, 150, 0.6);
+  }
+  #touch .pedal.gas {
+    height: 128px;
+    background-color: rgba(28, 120, 58, 0.55);
+    border-color: rgba(150, 255, 180, 0.6);
+  }
+  #touch .pedal.brake.down {
+    background-color: rgba(214, 52, 52, 0.75);
+  }
+  #touch .pedal.gas.down {
+    background-color: rgba(52, 190, 92, 0.75);
+  }
+  #touch .pedal.down {
+    transform: scale(0.95);
+  }
+  #touch,
+  #touch * {
+    touch-action: none;
+  }
   .hud-speed {
-    bottom: 104px;
+    bottom: 152px;
   }
   .hud-right {
-    bottom: 104px;
+    bottom: 152px;
+  }
+  /* horn, wave and camera sit in a row between the steering buttons and the pedals */
+  #touch .mid {
+    flex-direction: row;
+    gap: 10px;
   }
   #hint {
-    bottom: 104px;
+    bottom: 76px;
   }
 }
 
@@ -1098,6 +1150,20 @@ section h2 {
     flex-direction: row;
     gap: 10px;
   }
+  #touch .left button {
+    width: 72px;
+    height: 72px;
+  }
+  #touch .pedal.brake {
+    height: 84px;
+  }
+  #touch .pedal.gas {
+    height: 108px;
+  }
+  .hud-speed,
+  .hud-right {
+    bottom: 130px;
+  }
   #hint,
   #hint.show {
     bottom: 76px;
@@ -1116,4 +1182,42 @@ a[hidden] {
 .foot-link {
   color: inherit;
   font-weight: 700;
+}
+
+/* phones held upright: everything has to fit across about 360px */
+@media (max-width: 700px) and (orientation: portrait) and (pointer: coarse) {
+  #touch {
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+  }
+  #touch .pad {
+    gap: 8px;
+  }
+  #touch .mid {
+    flex-direction: column;
+    gap: 6px;
+  }
+  #touch .left button {
+    width: 62px;
+    height: 62px;
+  }
+  #touch .mid button {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+  #touch .pedal {
+    width: 66px;
+    font-size: 12px;
+  }
+  #touch .pedal.brake {
+    height: 92px;
+  }
+  #touch .pedal.gas {
+    height: 116px;
+  }
+  .hud-speed,
+  .hud-right {
+    bottom: 140px;
+  }
 }
