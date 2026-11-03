@@ -16,6 +16,9 @@ Or serve it locally:
 npm start            # rebuilds, then serves at http://localhost:8080
 ```
 
+For itch.io, `npm run package:itch` builds `release/country-road-simulator-itch.zip` (the page, styles,
+share image and game bundle) ready to upload as an HTML game.
+
 The page runs the bundled `dist/country-road.js`. If you change anything in `src/`,
 run `npm install` once, then `npm run build` (or just `npm start`) to rebuild the bundle.
 

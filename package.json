@@ -7,9 +7,10 @@
   "scripts": {
     "build": "esbuild src/main.js --bundle --format=iife --alias:three=./vendor/three.module.js --minify --sourcemap --outfile=dist/country-road.js",
     "start": "npm run build && node server.mjs",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "package:itch": "npm run build && mkdir -p release && rm -f release/country-road-simulator-itch.zip && zip -q -X release/country-road-simulator-itch.zip index.html style.css og-image.jpg dist/country-road.js && unzip -l release/country-road-simulator-itch.zip"
   },
-  "license": "MIT",
+  "license": "UNLICENSED",
   "devDependencies": {
     "esbuild": "^0.24.0"
   }
