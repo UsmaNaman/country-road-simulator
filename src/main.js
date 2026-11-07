@@ -273,7 +273,7 @@ function showResults(type, summary, sim) {
   const key = `best.${state.region}.${state.vehicle}`;
   const prev = store.get(key, 0);
   const isBest = type === 'finish' && summary.final > prev;
-  if (isBest && !state.random) store.set(key, summary.final);
+  if (isBest && ranked()) store.set(key, summary.final);
   $('res-stars').innerHTML = [0, 1, 2].map((i) => `<span class="${i < summary.stars ? '' : 'off'}">★</span>`).join('');
   $('res-title').textContent = summary.title;
   $('res-sub').textContent =
@@ -281,7 +281,7 @@ function showResults(type, summary, sim) {
       ? `${sim.region.title} in the ${sim.vehicle.name.toLowerCase()} · ${fmt(sim.time)} · ${Math.round(sim.health)}% condition`
       : `${sim.failReason} Have another go?`;
   $('res-score').textContent = summary.final.toLocaleString('en-GB');
-  $('res-best').textContent = state.random ? 'Random route: best scores not recorded' : isBest ? '🏆 New personal best!' : prev ? `Your best: ${prev.toLocaleString('en-GB')}` : '';
+  $('res-best').textContent = state.random ? 'Random route: best scores not recorded' : isBest && ranked() ? '🏆 New personal best!' : prev ? `Your best: ${prev.toLocaleString('en-GB')}` : '';
   const good = $('res-good');
   const bad = $('res-bad');
   good.innerHTML = '';
@@ -316,7 +316,9 @@ function showResults(type, summary, sim) {
 }
 
 // ---------- world leaderboard ----------
-// Only the three standard routes are ranked (a random route is different for everyone).
+// Only the three standard routes are ranked (a random route is different for everyone), and only
+// runs the player drove: the test links (autopilot, fast-forward, forced encounter, mid-route start) don't count.
+const ranked = () => !state.random && state.seed == null && !['auto', 'ff', 'enc', 'at'].some((p) => params.has(p));
 const worldBest = {}; // route → its top run, or null when the board is empty
 async function refreshWorldBest(tries = 3) {
   const got = await Promise.all(
@@ -340,12 +342,11 @@ function fillWorldBest() {
 let boardRun = null; // the finished run the player may post
 async function showBoard(type, summary, sim) {
   const box = $('board');
-  const ranked = !state.random && state.seed == null;
-  box.hidden = !ranked;
+  box.hidden = !ranked();
   $('board-post').hidden = true;
   $('board-msg').textContent = '';
   boardRun = null;
-  if (!ranked) return;
+  if (!ranked()) return;
   $('board-title').textContent = `World top 10 · ${sim.region.title}`;
   const run = type === 'finish' ? { route: state.region, vehicle: state.vehicle, score: summary.final, time: sim.time, condition: sim.health } : null;
   boardRun = run;
