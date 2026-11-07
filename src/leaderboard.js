@@ -44,12 +44,13 @@ export async function submitScore({ name, route, vehicle, score, time, condition
 
 // The same rules the database applies (supabase/migrations), checked first so players get a
 // helpful message without a round trip. Returns a problem to show, or null if the name is fine.
-const RUDE = /(fuck|shit|cunt|bitch|wank|twat|pussy|nigg|fagg|slut|whore|rapist|nazi|hitler|retard|spastic|kike|bellend|tosser|bollock|asshole|dildo|porn)/;
+export const RUDE = /(fuck|shit|cunt|bitch|wank|twat|pussy|nigg|fagg|slut|whore|rapist|nazi|hitler|retard|spastic|kike|bellend|tosser|bollock|asshole|dildo|porn)/;
+export const NAME_RE = /^[A-Za-z0-9][A-Za-z0-9 _.'-]{0,14}[A-Za-z0-9.]$/;
 export function nameProblem(raw) {
   const name = raw.trim().replace(/\s+/g, ' ');
   if (name.length < 2) return 'At least 2 characters, please.';
   if (name.length > 16) return '16 characters at most.';
-  if (!/^[A-Za-z0-9][A-Za-z0-9 _.'-]{0,14}[A-Za-z0-9.]$/.test(name)) return 'Letters, numbers, spaces and . _ \' - only.';
+  if (!NAME_RE.test(name)) return 'Letters, numbers, spaces and . _ \' - only.';
   const flat = name.toLowerCase().replace(/[013457@$]/g, (c) => ({ 0: 'o', 1: 'i', 3: 'e', 4: 'a', 5: 's', 7: 't', '@': 'a', $: 's' })[c]).replace(/[^a-z]/g, '');
   if (RUDE.test(flat)) return 'Let’s keep it family-friendly.';
   return null;
