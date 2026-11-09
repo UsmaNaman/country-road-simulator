@@ -9,7 +9,13 @@ const port = Number(process.env.PORT) || 8080;
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png' };
 
 createServer(async (req, res) => {
-  const path = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)).replace(/^(\.\.[/\\])+/, '');
+  let path;
+  try {
+    path = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)).replace(/^(\.\.[/\\])+/, '');
+  } catch {
+    res.writeHead(400).end('Bad request'); // a malformed address must not take the server down
+    return;
+  }
   const file = join(root, path.endsWith('/') ? path + 'index.html' : path);
   if (!file.startsWith(root)) {
     res.writeHead(403).end();

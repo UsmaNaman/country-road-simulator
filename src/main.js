@@ -1,7 +1,7 @@
 // Entry point: menu, game lifecycle, pause and results screens, main loop.
 import * as THREE from 'three';
 import { Game } from './game.js';
-import { HUD } from './hud.js';
+import { HUD, fmtTime } from './hud.js';
 import { Input } from './input.js';
 import { AudioSys } from './audio.js';
 import { REGIONS, REGION_ORDER, VEHICLES, VEHICLE_ORDER } from './config.js';
@@ -278,7 +278,7 @@ function showResults(type, summary, sim) {
   $('res-title').textContent = summary.title;
   $('res-sub').textContent =
     type === 'finish'
-      ? `${sim.region.title} in the ${sim.vehicle.name.toLowerCase()} · ${fmt(sim.time)} · ${Math.round(sim.health)}% condition`
+      ? `${sim.region.title} in the ${sim.vehicle.name.toLowerCase()} · ${fmtTime(sim.time)} · ${Math.round(sim.health)}% condition`
       : `${sim.failReason} Have another go?`;
   $('res-score').textContent = summary.final.toLocaleString('en-GB');
   $('res-best').textContent = state.random ? 'Random route: best scores not recorded' : isBest && ranked() ? '🏆 New personal best!' : prev ? `Your best: ${prev.toLocaleString('en-GB')}` : '';
@@ -415,8 +415,6 @@ $('board-post').onsubmit = async (e) => {
     }[res.reason] || 'Couldn’t reach the leaderboard. Check your connection and try again.';
   }
 };
-
-const fmt = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
 function toMenu() {
   state.mode = 'menu';

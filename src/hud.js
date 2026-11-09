@@ -2,7 +2,7 @@
 import { MPH } from './config.js';
 
 const $ = (id) => document.getElementById(id);
-const fmtTime = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+export const fmtTime = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
 export class HUD {
   constructor() {

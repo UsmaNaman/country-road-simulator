@@ -1,5 +1,6 @@
 // "Send feedback" links: open the Google Form with a "Game details" answer filled in for the player.
 import { FEEDBACK, GAME_VERSION, REGIONS, VEHICLES } from './config.js';
+import { fmtTime } from './hud.js';
 
 function device() {
   const ua = navigator.userAgent;
@@ -13,14 +14,13 @@ function device() {
 
 // sim is optional: from the menu there is no run to describe
 export function feedbackUrl(state, sim, where) {
-  const fmt = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
   // which copy they're playing: itch.io serves games from its own *.itch.zone / *.hwcdn.net hosts
   const host = location.hostname;
   const site = /itch\.zone$|hwcdn\.net$|itch\.io$/.test(host) ? 'itch.io' : host.endsWith('github.io') ? 'GitHub Pages' : host || 'local file';
   const bits = [`v${GAME_VERSION}`, site, where];
   if (sim) {
     const pct = Math.round(Math.min(1, Math.max(0, sim.player.s / sim.road.length)) * 100);
-    bits.push(`${sim.region.title}${state.random ? ` (random #${state.seed})` : ''}`, sim.vehicle.name, `${pct}% along`, fmt(sim.time), `score ${Math.round(sim.summary?.final ?? sim.score.total)}`, `condition ${Math.round(sim.health)}%`);
+    bits.push(`${sim.region.title}${state.random ? ` (random #${state.seed})` : ''}`, sim.vehicle.name, `${pct}% along`, fmtTime(sim.time), `score ${Math.round(sim.summary?.final ?? sim.score.total)}`, `condition ${Math.round(sim.health)}%`);
     if (sim.failReason) bits.push(`ended: ${sim.failReason}`);
   } else {
     bits.push(REGIONS[state.region]?.title, VEHICLES[state.vehicle]?.name);
