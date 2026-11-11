@@ -94,6 +94,7 @@ const state = {
   vehicle: VEHICLES[store.get('vehicle', 'hatch')] ? store.get('vehicle', 'hatch') : 'hatch',
   colour: store.get('colour', 0),
   random: store.get('random', false),
+  dusk: params.has('dusk') ? params.get('dusk') === '1' : store.get('dusk', false),
   seed: null,
   game: null,
   paused: false,
@@ -185,6 +186,7 @@ function renderMenu() {
     cbox.appendChild(s);
   });
   $('random-route').checked = state.random;
+  $('dusk').checked = state.dusk;
 }
 
 function dots(n, of) {
@@ -193,6 +195,11 @@ function dots(n, of) {
   return s;
 }
 
+$('dusk').onchange = (e) => {
+  state.dusk = e.target.checked;
+  store.set('dusk', state.dusk);
+  startAttract(); // the menu backdrop shows the chosen time of day
+};
 $('random-route').onchange = (e) => {
   state.random = e.target.checked;
   store.set('random', state.random);
@@ -212,7 +219,7 @@ function startAttract() {
   attractTimer = setTimeout(() => {
     if (state.mode !== 'menu') return;
     disposeGame();
-    state.game = new Game({ renderer, regionId: state.region, vehicleId: 'estate', colour: '#5b6770', attract: true });
+    state.game = new Game({ renderer, regionId: state.region, vehicleId: 'estate', colour: '#5b6770', attract: true, dusk: state.dusk });
     // skip the first few seconds so the backdrop opens mid-drive
     for (let i = 0; i < 40; i++) state.game.update(0.1, null);
   }, 60);
@@ -243,6 +250,7 @@ function startGame({ sameSeed = false } = {}) {
       seed: state.seed,
       autopilot: params.get('auto') === '1',
       forceEncounter: params.get('enc'),
+      dusk: state.dusk,
       onOver: (type, summary, sim) => setTimeout(() => showResults(type, summary, sim), type === 'fail' ? 1800 : 1200),
     });
     state.game.mirrorOn = state.mirror;

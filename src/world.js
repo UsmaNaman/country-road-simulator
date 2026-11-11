@@ -754,7 +754,7 @@ export function buildWorld(road, region, scene) {
     const ct = TX.cloudTexture();
     const n = region.weather === 'drizzle' ? 26 : 16;
     for (let k = 0; k < n; k++) {
-      const sm = new THREE.SpriteMaterial({ map: ct, fog: false, transparent: true, opacity: region.weather === 'drizzle' ? 0.9 : 0.75, depthWrite: false, color: region.weather === 'mist' ? '#ffe9d0' : '#ffffff' });
+      const sm = new THREE.SpriteMaterial({ map: ct, fog: false, transparent: true, opacity: region.weather === 'drizzle' ? 0.9 : 0.75, depthWrite: false, color: region.sky.cloud || (region.weather === 'mist' ? '#ffe9d0' : '#ffffff') });
       const sp = new THREE.Sprite(sm);
       const a = rng.range(0, Math.PI * 2);
       const r = rng.range(700, 1700);

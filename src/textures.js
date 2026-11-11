@@ -26,6 +26,20 @@ function cached(key, fn) {
   return cache.get(key);
 }
 
+// soft dark ellipse drawn under things when there's no real shadow pass (phones and tablets)
+export function blobTexture() {
+  return cached('blob', () => {
+    const [c, g] = makeCanvas(64, 64);
+    const grd = g.createRadialGradient(32, 32, 4, 32, 32, 32);
+    grd.addColorStop(0, 'rgba(0,0,0,0.7)');
+    grd.addColorStop(0.5, 'rgba(0,0,0,0.45)');
+    grd.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = grd;
+    g.fillRect(0, 0, 64, 64);
+    return toTexture(c, { repeat: false, srgb: false });
+  });
+}
+
 const hsl = (h, s, l, a = 1) => `hsla(${h}, ${s}%, ${l}%, ${a})`;
 
 export function tarmacTexture(tone = 0) {

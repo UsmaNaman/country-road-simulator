@@ -3,8 +3,8 @@
 import * as THREE from 'three';
 import { Sim, autopilot } from './sim.js';
 import { buildWorld } from './world.js';
-import { makeModel, makeCar, makeTractor } from './models.js';
-import { emojiTexture } from './textures.js';
+import { makeModel, makeCar, makeTractor, setDusk } from './models.js';
+import { emojiTexture, blobTexture } from './textures.js';
 import { clamp, lerp } from './rng.js';
 
 const STEP = 1 / 60;
@@ -68,8 +68,19 @@ class Particles {
   }
 }
 
+// Phones and tablets skip the shadow pass, so everything that moves gets a soft dark patch underneath instead.
+const blobGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+let blobMat;
+function addBlob(m, len, wid) {
+  blobMat ??= new THREE.MeshBasicMaterial({ map: blobTexture(), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
+  const b = new THREE.Mesh(blobGeo, blobMat);
+  b.scale.set(wid + 0.5, 1, len + 0.5);
+  b.position.y = 0.04;
+  m.add(b);
+}
+
 export class Game {
-  constructor({ renderer, regionId, vehicleId, colour, audio = null, hud = null, attract = false, autopilot: auto = false, seed, onOver, forceEncounter = null }) {
+  constructor({ renderer, regionId, vehicleId, colour, audio = null, hud = null, attract = false, autopilot: auto = false, seed, onOver, forceEncounter = null, dusk = false }) {
     this.renderer = renderer;
     this.audio = audio;
     this.hud = hud;
@@ -77,7 +88,10 @@ export class Game {
     this.auto = auto || attract;
     this.onOver = onOver;
     this.sim = new Sim({ regionId, vehicleId, seed, forceEncounter });
-    this.region = this.sim.region;
+    const base = this.sim.region;
+    this.region = dusk ? { ...base, sky: { ...base.sky, ...base.dusk } } : base;
+    setDusk(dusk);
+    this.blobs = !renderer.shadowMap.enabled;
     this.road = this.sim.road;
     this.time = 0;
     this.acc = 0;
@@ -112,6 +126,14 @@ export class Game {
     const v = this.sim.vehicle;
     this.playerMesh = v.model === 'tractor' ? makeTractor(colour || v.colors[0]) : makeCar(v.model, colour || v.colors[0]);
     this.playerMesh.rotation.order = 'YXZ';
+    if (this.blobs) addBlob(this.playerMesh, this.player.len, this.player.wid);
+    if (dusk) {
+      // dipped headlights: one beam from the front of the car, no shadows (cheap)
+      const beam = new THREE.SpotLight('#fff1d6', 120, 70, 0.5, 0.6, 1.5);
+      beam.position.set(0, 0.8, this.player.len / 2);
+      beam.target.position.set(0, 0, this.player.len / 2 + 20);
+      this.playerMesh.add(beam, beam.target);
+    }
     scene.add(this.playerMesh);
     this.meshes = new Map();
     this.particles = new Particles(scene);
@@ -265,6 +287,7 @@ export class Game {
   addMesh(e) {
     const m = makeModel(e, this.region);
     m.rotation.order = 'YXZ';
+    if (this.blobs) addBlob(m, e.len, e.wid);
     this.scene.add(m);
     this.meshes.set(e, m);
     this.syncEntity(e, m, 0);

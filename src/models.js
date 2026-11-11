@@ -141,7 +141,8 @@ export function makeCar(type, color) {
 
   g.userData.animate = (e, dt) => {
     spinWheels(g, e, dt);
-    head.emissive.setRGB(0, 0, 0);
+    if (duskOn) head.emissive.setRGB(0.9, 0.8, 0.55);
+    else head.emissive.setRGB(0, 0, 0);
     if (e.flashT > 0 && Math.floor(e.flashT * 6) % 2 === 0) head.emissive.setRGB(1, 0.95, 0.75);
   };
   return g;
@@ -652,6 +653,10 @@ export function makeGate(open = false) {
   mesh.castShadow = true;
   return mesh;
 }
+
+// dusk runs switch every car's headlights on
+let duskOn = false;
+export const setDusk = (on) => (duskOn = on);
 
 export function makeModel(e, region) {
   switch (e.kind) {

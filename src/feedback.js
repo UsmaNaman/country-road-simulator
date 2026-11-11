@@ -20,7 +20,7 @@ export function feedbackUrl(state, sim, where) {
   const bits = [`v${GAME_VERSION}`, site, where];
   if (sim) {
     const pct = Math.round(Math.min(1, Math.max(0, sim.player.s / sim.road.length)) * 100);
-    bits.push(`${sim.region.title}${state.random ? ` (random #${state.seed})` : ''}`, sim.vehicle.name, `${pct}% along`, fmtTime(sim.time), `score ${Math.round(sim.summary?.final ?? sim.score.total)}`, `condition ${Math.round(sim.health)}%`);
+    bits.push(`${sim.region.title}${state.random ? ` (random #${state.seed})` : ''}${state.dusk ? ' at dusk' : ''}`, sim.vehicle.name, `${pct}% along`, fmtTime(sim.time), `score ${Math.round(sim.summary?.final ?? sim.score.total)}`, `condition ${Math.round(sim.health)}%`);
     if (sim.failReason) bits.push(`ended: ${sim.failReason}`);
   } else {
     bits.push(REGIONS[state.region]?.title, VEHICLES[state.vehicle]?.name);
