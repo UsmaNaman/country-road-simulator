@@ -8,7 +8,8 @@
     "build": "esbuild src/main.js --bundle --format=iife --alias:three=./vendor/three.module.js --minify --sourcemap --outfile=dist/country-road.js",
     "start": "npm run build && node server.mjs",
     "test": "node --test tests/*.test.mjs",
-    "package:itch": "npm run build && mkdir -p release && rm -f release/country-road-simulator-itch.zip && zip -q -X release/country-road-simulator-itch.zip index.html style.css og-image.jpg dist/country-road.js && unzip -l release/country-road-simulator-itch.zip"
+    "stage:itch": "npm run build && rm -rf release/itch && mkdir -p release/itch/dist && cp index.html style.css og-image.jpg release/itch/ && cp dist/country-road.js release/itch/dist/",
+    "publish:itch": "npm test && npm run stage:itch && butler push release/itch usmanaman/country-road-simulator:html --userversion \"$(git rev-parse --short HEAD)\""
   },
   "license": "UNLICENSED",
   "devDependencies": {
