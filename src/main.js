@@ -6,7 +6,7 @@ import { Input } from './input.js';
 import { AudioSys } from './audio.js';
 import { REGIONS, REGION_ORDER, VEHICLES, VEHICLE_ORDER } from './config.js';
 import { updateFeedbackLinks } from './feedback.js';
-import { topScores, submitScore, nameProblem } from './leaderboard.js';
+import { topScores, submitScore, nameProblem, dailyKey, dailySeed } from './leaderboard.js';
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -94,6 +94,8 @@ const state = {
   vehicle: VEHICLES[store.get('vehicle', 'hatch')] ? store.get('vehicle', 'hatch') : 'hatch',
   colour: store.get('colour', 0),
   random: store.get('random', false),
+  daily: store.get('daily', false) && !store.get('random', false),
+  route: null, // leaderboard key for the current run: a region, or daily-<region>-<yyyymmdd>
   dusk: params.has('dusk') ? params.get('dusk') === '1' : store.get('dusk', false),
   seed: null,
   game: null,
@@ -186,6 +188,7 @@ function renderMenu() {
     cbox.appendChild(s);
   });
   $('random-route').checked = state.random;
+  $('daily').checked = state.daily;
   $('dusk').checked = state.dusk;
 }
 
@@ -200,10 +203,16 @@ $('dusk').onchange = (e) => {
   store.set('dusk', state.dusk);
   startAttract(); // the menu backdrop shows the chosen time of day
 };
-$('random-route').onchange = (e) => {
-  state.random = e.target.checked;
-  store.set('random', state.random);
-};
+// random and daily are different routes, so ticking one unticks the other
+$('random-route').onchange = (e) => setRoute({ random: e.target.checked, daily: false });
+$('daily').onchange = (e) => setRoute({ random: false, daily: e.target.checked });
+function setRoute({ random, daily }) {
+  Object.assign(state, { random, daily });
+  store.set('random', random);
+  store.set('daily', daily);
+  $('random-route').checked = random;
+  $('daily').checked = daily;
+}
 
 // ---------- game lifecycle ----------
 function disposeGame() {
@@ -238,7 +247,11 @@ function startGame({ sameSeed = false } = {}) {
   state.mode = 'loading';
   setTimeout(() => {
     disposeGame();
-    if (!sameSeed) state.seed = state.random ? Math.floor(Math.random() * 1e6) + 1 : undefined;
+    if (!sameSeed || !state.route) {
+      // the day is fixed when the run starts, so a run that crosses midnight still posts to its own day
+      state.route = state.daily ? dailyKey(state.region) : state.region;
+      state.seed = state.random ? Math.floor(Math.random() * 1e6) + 1 : state.daily ? dailySeed(state.route) : undefined;
+    }
     const v = VEHICLES[state.vehicle];
     state.game = new Game({
       renderer,
@@ -281,7 +294,8 @@ function showResults(type, summary, sim) {
   const key = `best.${state.region}.${state.vehicle}`;
   const prev = store.get(key, 0);
   const isBest = type === 'finish' && summary.final > prev;
-  if (isBest && ranked()) store.set(key, summary.final);
+  const keepBest = ranked() && !state.daily; // local bests are for the fixed routes
+  if (isBest && keepBest) store.set(key, summary.final);
   $('res-stars').innerHTML = [0, 1, 2].map((i) => `<span class="${i < summary.stars ? '' : 'off'}">★</span>`).join('');
   $('res-title').textContent = summary.title;
   $('res-sub').textContent =
@@ -289,7 +303,15 @@ function showResults(type, summary, sim) {
       ? `${sim.region.title} in the ${sim.vehicle.name.toLowerCase()} · ${fmtTime(sim.time)} · ${Math.round(sim.health)}% condition`
       : `${sim.failReason} Have another go?`;
   $('res-score').textContent = summary.final.toLocaleString('en-GB');
-  $('res-best').textContent = state.random ? 'Random route: best scores not recorded' : isBest && ranked() ? '🏆 New personal best!' : prev ? `Your best: ${prev.toLocaleString('en-GB')}` : '';
+  $('res-best').textContent = state.random
+    ? 'Random route: best scores not recorded'
+    : state.daily
+      ? 'Daily lane: a new one tomorrow'
+      : isBest && keepBest
+        ? '🏆 New personal best!'
+        : prev
+          ? `Your best: ${prev.toLocaleString('en-GB')}`
+          : '';
   const good = $('res-good');
   const bad = $('res-bad');
   good.innerHTML = '';
@@ -324,9 +346,10 @@ function showResults(type, summary, sim) {
 }
 
 // ---------- world leaderboard ----------
-// Only the three standard routes are ranked (a random route is different for everyone), and only
-// runs the player drove: the test links (autopilot, fast-forward, forced encounter, mid-route start) don't count.
-const ranked = () => !state.random && state.seed == null && !['auto', 'ff', 'enc', 'at'].some((p) => params.has(p));
+// Only the standard routes and the daily lane are ranked (a random route is different for everyone), and only
+// runs the player drove: the test links (autopilot, fast-forward, forced encounter, mid-route start, seed) don't count.
+const ranked = () => !state.random && (state.seed == null || state.daily) && !['auto', 'ff', 'enc', 'at', 'seed'].some((p) => params.has(p));
+const boardName = (route) => (route.startsWith('daily-') ? `Today’s lane · ${REGIONS[route.split('-')[1]].title}` : REGIONS[route].title);
 const worldBest = {}; // route → its top run, or null when the board is empty
 async function refreshWorldBest(tries = 3) {
   const got = await Promise.all(
@@ -355,10 +378,10 @@ async function showBoard(type, summary, sim) {
   $('board-msg').textContent = '';
   boardRun = null;
   if (!ranked()) return;
-  $('board-title').textContent = `World top 10 · ${sim.region.title}`;
-  const run = type === 'finish' ? { route: state.region, vehicle: state.vehicle, score: summary.final, time: sim.time, condition: sim.health } : null;
+  $('board-title').textContent = `World top 10 · ${boardName(state.route)}`;
+  const run = type === 'finish' ? { route: state.route, vehicle: state.vehicle, score: summary.final, time: sim.time, condition: sim.health } : null;
   boardRun = run;
-  const rows = await renderBoard(state.region);
+  const rows = await renderBoard(state.route);
   if (boardRun !== run) return; // another run finished while this was loading
   if (!rows) {
     box.hidden = true; // leaderboard unreachable: just leave it out
@@ -413,7 +436,7 @@ $('board-post').onsubmit = async (e) => {
     boardRun = null;
     $('board-post').hidden = true;
     await renderBoard(run.route, { name, score: run.score });
-    $('board-title').textContent = `You're #${res.rank} in the world · ${REGIONS[run.route].title}`;
+    $('board-title').textContent = `You're #${res.rank} in the world · ${boardName(run.route)}`;
     refreshWorldBest();
   } else {
     msg.textContent = {
@@ -576,6 +599,7 @@ async function boot() {
     if (VEHICLES[c]) state.vehicle = c;
     if (params.get('seed')) {
       state.seed = Number(params.get('seed'));
+      state.route = state.region; // unranked anyway: keeps the given seed rather than the daily one
       startGame({ sameSeed: true });
     } else startGame();
   } else {

@@ -32,6 +32,8 @@ run `npm install` once, then `npm run build` (or just `npm start`) to rebuild th
 | **Highland Single Track** (Scotland) | Single-track road with signed passing places, moorland, lochs, mountains | Motorhomes that can't reverse, touring cyclists, Highland coos in no hurry at all |
 
 Tick **Random route** for a freshly generated lane each time (best scores aren't recorded for those).
+Tick **Daily lane** for today's lane on the chosen route: a new one every day (UTC), the same for
+everyone, with its own world top 10.
 
 ## The vehicles
 

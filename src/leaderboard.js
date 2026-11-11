@@ -55,3 +55,7 @@ export function nameProblem(raw) {
   if (RUDE.test(flat)) return 'Let’s keep it family-friendly.';
   return null;
 }
+
+// The daily lane: one generated route per region per UTC day, the same for everyone, with its own board.
+export const dailyKey = (region, date = new Date()) => `daily-${region}-${date.toISOString().slice(0, 10).replace(/-/g, '')}`;
+export const dailySeed = (key) => ((Math.imul(+key.slice(-8), 2654435761) >>> 0) % 999983) + 1;

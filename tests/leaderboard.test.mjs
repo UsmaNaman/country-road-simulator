@@ -6,9 +6,10 @@ import { readFileSync } from 'node:fs';
 import { Road } from '../src/road.js';
 import { Score, summarise } from '../src/scoring.js';
 import { REGIONS, REGION_ORDER, VEHICLES, VEHICLE_ORDER } from '../src/config.js';
-import { RUDE, NAME_RE, nameProblem } from '../src/leaderboard.js';
+import { RUDE, NAME_RE, nameProblem, dailyKey, dailySeed } from '../src/leaderboard.js';
 
 const sql = readFileSync(new URL('../supabase/migrations/20261029180000_leaderboard.sql', import.meta.url), 'utf8');
+const dailySql = readFileSync(new URL('../supabase/migrations/20261111120000_daily_lane.sql', import.meta.url), 'utf8');
 
 test('score limits match the game: max = 2 × par, min time = 1.4 × length ÷ top speed', () => {
   const limits = {};
@@ -30,4 +31,24 @@ test('name rules match the database', () => {
   assert.ok(sql.includes(`'${NAME_RE.source.replace(/'/g, "''")}'`), 'name pattern differs from name_ok() in the SQL');
   assert.equal(nameProblem('Brrap'), null);
   assert.ok(nameProblem('5hit'), 'leetspeak rude words are caught');
+});
+
+test('daily lane limits cover every day to 2030: max ≥ 2 × that day’s par, same min time as the fixed route', () => {
+  const limits = {};
+  for (const [, route, vehicle, max, min] of dailySql.matchAll(/\('daily-(\w+)', '(\w+)', (\d+), (\d+)\)/g)) limits[`${route}.${vehicle}`] = { max: +max, min: +min };
+  for (const r of REGION_ORDER) {
+    for (let t = Date.UTC(2026, 10, 1); t < Date.UTC(2030, 0, 1); t += 864e5) {
+      const key = dailyKey(r, new Date(t));
+      const road = new Road(REGIONS[r], dailySeed(key));
+      for (const v of VEHICLE_ORDER) {
+        const lim = limits[`${r}.${v}`];
+        assert.ok(lim, `no daily score_limits row for ${r} ${v}`);
+        const { par } = summarise({ score: new Score(), road, vehicle: VEHICLES[v], health: 100, time: 0, finished: true });
+        assert.ok(2 * par <= lim.max, `${key} ${v}: par ${par} is over half the limit, raise max_score`);
+        assert.ok(Math.abs(lim.min - (1.4 * road.length) / VEHICLES[v].maxSpeed) <= 1, `${r} ${v}: update min_time_s`);
+      }
+    }
+  }
+  assert.equal(dailyKey('wales', new Date('2026-11-11T23:30:00Z')), 'daily-wales-20261111');
+  assert.notEqual(dailySeed('daily-wales-20261111'), dailySeed('daily-wales-20261112'));
 });
